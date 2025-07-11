@@ -1,12 +1,10 @@
 #!/bin/bash
 
 # ========================================================================
-# EVOLUSO - MOTD Installation Script
+# EVOLUSO - Simple MOTD Installation Script
 # ========================================================================
 
 MOTD_FILE="/etc/motd"
-REPO_URL="https://github.com/GVALFER/motds"
-SCRIPT_NAME="evoluso.sh"
 
 # Clean ALL existing MOTDs (including system defaults)
 clean_motds() {
@@ -113,12 +111,8 @@ main() {
     # Install dependencies silently
     install_deps
 
-    # Try to download from repo, fallback to local creation
-    if curl -s "$REPO_URL/raw/main/$SCRIPT_NAME" >/dev/null 2>&1; then
-        curl -s "$REPO_URL/raw/main/$SCRIPT_NAME" > "$MOTD_FILE" 2>/dev/null || create_motd
-    else
-        create_motd
-    fi
+    # Create our MOTD directly
+    create_motd
 
     # Setup for dynamic MOTD systems (Ubuntu/Debian primarily)
     if [[ -d "/etc/update-motd.d" ]]; then
