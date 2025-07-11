@@ -68,7 +68,7 @@ HOSTNAME=$(hostname)
 MAIN_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}' | grep -v unreachable)
 [ -z "$MAIN_IP" ] && MAIN_IP=$(hostname -I | awk '{print $1}')
 
-echo -e "${YELLOW}"
+echo -e "${CYAN}"
 echo " ███████╗██╗   ██╗ ██████╗ ██╗     ██╗   ██╗███████╗ ██████╗ "
 echo " ██╔════╝██║   ██║██╔═══██╗██║     ██║   ██║██╔════╝██╔═══██╗"
 echo " █████╗  ██║   ██║██║   ██║██║     ██║   ██║███████╗██║   ██║"
