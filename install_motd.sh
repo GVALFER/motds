@@ -84,8 +84,6 @@ echo -e "${GREEN}Hostname:${NC} $HOSTNAME"
 echo -e "${GREEN}IP Address:${NC} $MAIN_IP"
 echo
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}Welcome to your Evoluso server!${NC}"
-echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 EOF
     chmod +x "$MOTD_SCRIPT"
 }
@@ -109,7 +107,6 @@ create_static_motd() {
 Hostname:  $HOSTNAME
 IP:        $MAIN_IP
 
-Welcome to your Evoluso server!
 EOF
 }
 
