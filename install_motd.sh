@@ -1,49 +1,59 @@
 #!/bin/bash
 
 # ========================================================================
-# EVOLUSO - Simple MOTD Installation Script
+# EVOLUSO - Universal MOTD Installer (Ubuntu, Debian, CentOS, Alma, Rocky)
 # ========================================================================
 
-MOTD_FILE="/etc/motd"
+set -e
 
-# Clean ALL existing MOTDs (including system defaults)
+# Detect distro
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO=$ID
+else
+    DISTRO=$(uname -s)
+fi
+
+# MOTD paths
+MOTD_STATIC="/etc/motd"
+MOTD_SCRIPT="/etc/update-motd.d/00-evoluso"
+
+# Remove all old MOTDs and disables other motd scripts/services
 clean_motds() {
-    # Remove existing MOTD files completely
-    rm -f "$MOTD_FILE" 2>/dev/null
-    rm -f /etc/motd.tail 2>/dev/null
-    rm -f /etc/motd.dynamic 2>/dev/null
-    rm -f /run/motd.dynamic 2>/dev/null
-    rm -f /var/run/motd 2>/dev/null
-    rm -f /var/run/motd.dynamic 2>/dev/null
-
-    # Clean dynamic MOTD directory completely (Ubuntu/Debian)
+    rm -f "$MOTD_STATIC" /etc/motd.tail /etc/motd.dynamic /run/motd.dynamic /var/run/motd /var/run/motd.dynamic 2>/dev/null || true
     if [[ -d "/etc/update-motd.d" ]]; then
-        # Remove ALL scripts in update-motd.d
-        rm -f /etc/update-motd.d/* 2>/dev/null
-        # Recreate directory
+        rm -f /etc/update-motd.d/* 2>/dev/null || true
         mkdir -p /etc/update-motd.d
     fi
-
-    # Disable Ubuntu's MOTD services completely
     [[ -f /etc/default/motd-news ]] && sed -i 's/ENABLED=1/ENABLED=0/' /etc/default/motd-news 2>/dev/null
-
-    # Disable systemd MOTD services
-    systemctl disable motd-news.service 2>/dev/null
-    systemctl disable motd-news.timer 2>/dev/null
-    systemctl stop motd-news.service 2>/dev/null
-    systemctl stop motd-news.timer 2>/dev/null
-
-    # Remove package manager MOTDs
-    rm -f /etc/apt/apt.conf.d/99update-notifier 2>/dev/null
-
-    # Clear SSH MOTD configurations
-    sed -i '/PrintMotd/d' /etc/ssh/sshd_config 2>/dev/null
+    systemctl disable motd-news.service motd-news.timer 2>/dev/null || true
+    systemctl stop motd-news.service motd-news.timer 2>/dev/null || true
+    rm -f /etc/apt/apt.conf.d/99update-notifier 2>/dev/null || true
+    sed -i '/PrintMotd/d' /etc/ssh/sshd_config 2>/dev/null || true
     echo "PrintMotd yes" >> /etc/ssh/sshd_config
 }
 
-# Create MOTD content
-create_motd() {
-    cat > "$MOTD_FILE" << 'EOF'
+# Install required dependencies (curl, wget, etc)
+install_deps() {
+    if command -v apt-get &> /dev/null; then
+        apt-get update -qq
+        apt-get install -y curl wget
+    elif command -v yum &> /dev/null; then
+        yum install -y curl wget
+    elif command -v dnf &> /dev/null; then
+        dnf install -y curl wget
+    elif command -v pacman &> /dev/null; then
+        pacman -Sy --noconfirm curl wget
+    elif command -v zypper &> /dev/null; then
+        zypper install -y curl wget
+    elif command -v apk &> /dev/null; then
+        apk add --no-cache curl wget
+    fi
+}
+
+# Create dynamic script for update-motd.d (Ubuntu/Debian)
+create_dynamic_motd_script() {
+    cat > "$MOTD_SCRIPT" << 'EOF'
 #!/bin/bash
 
 # Colors
@@ -54,19 +64,18 @@ YELLOW='\033[1;33m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# System information
 HOSTNAME=$(hostname)
-MAIN_IP=$(ip route get 8.8.8.8 2>/dev/null | head -1 | cut -d' ' -f7 2>/dev/null || hostname -I | awk '{print $1}' 2>/dev/null || echo "N/A")
+MAIN_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}' | grep -v unreachable)
+[ -z "$MAIN_IP" ] && MAIN_IP=$(hostname -I | awk '{print $1}')
 
 echo -e "${BLUE}"
-echo "███████╗██╗   ██╗ ██████╗ ██╗     ██╗   ██╗███████╗ ██████╗ "
-echo "██╔════╝██║   ██║██╔═══██╗██║     ██║   ██║██╔════╝██╔═══██╗"
-echo "█████╗  ██║   ██║██║   ██║██║     ██║   ██║███████╗██║   ██║"
-echo "██╔══╝  ╚██╗ ██╔╝██║   ██║██║     ██║   ██║╚════██║██║   ██║"
-echo "███████╗ ╚████╔╝ ╚██████╔╝███████╗╚██████╔╝███████║╚██████╔╝"
-echo "╚══════╝  ╚═══╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ "
+echo " ███████╗██╗   ██╗ ██████╗ ██╗     ██╗   ██╗███████╗ ██████╗ "
+echo " ██╔════╝██║   ██║██╔═══██╗██║     ██║   ██║██╔════╝██╔═══██╗"
+echo " █████╗  ██║   ██║██║   ██║██║     ██║   ██║███████╗██║   ██║"
+echo " ██╔══╝  ╚██╗ ██╔╝██║   ██║██║     ██║   ██║╚════██║██║   ██║"
+echo " ███████║ ╚████╔╝ ╚██████╔╝███████╗╚██████╔╝███████║╚██████╔╝"
+echo " ╚══════╝  ╚═══╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ "
 echo -e "${NC}"
-
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${WHITE}                    RELIABLE HOSTING                           ${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
@@ -77,59 +86,55 @@ echo
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${YELLOW}Welcome to your Evoluso server!${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+EOF
+    chmod +x "$MOTD_SCRIPT"
+}
 
+# Generate static MOTD (CentOS, Alma, Rocky, RHEL, etc)
+create_static_motd() {
+    HOSTNAME=$(hostname)
+    MAIN_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}' | grep -v unreachable)
+    [ -z "$MAIN_IP" ] && MAIN_IP=$(hostname -I | awk '{print $1}')
+
+    cat > "$MOTD_STATIC" <<EOF
+ ███████╗██╗   ██╗ ██████╗ ██╗     ██╗   ██╗███████╗ ██████╗
+ ██╔════╝██║   ██║██╔═══██╗██║     ██║   ██║██╔════╝██╔═══██╗
+ █████╗  ██║   ██║██║   ██║██║     ██║   ██║███████╗██║   ██║
+ ██╔══╝  ╚██╗ ██╔╝██║   ██║██║     ██║   ██║╚════██║██║   ██║
+ ███████║ ╚████╔╝ ╚██████╔╝███████╗╚██████╔╝███████║╚██████╔╝
+ ╚══════╝  ╚═══╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝
+
+                   RELIABLE HOSTING
+
+Hostname:  $HOSTNAME
+IP:        $MAIN_IP
+
+Welcome to your Evoluso server!
 EOF
 }
 
-# Install dependencies
-install_deps() {
-    if command -v apt-get &> /dev/null; then
-        apt-get update -qq >/dev/null 2>&1
-        apt-get install -y curl wget figlet >/dev/null 2>&1
-    elif command -v yum &> /dev/null; then
-        yum install -y curl wget figlet >/dev/null 2>&1
-        yum install -y epel-release >/dev/null 2>&1
-    elif command -v dnf &> /dev/null; then
-        dnf install -y curl wget figlet >/dev/null 2>&1
-    elif command -v pacman &> /dev/null; then
-        pacman -Sy --noconfirm curl wget figlet >/dev/null 2>&1
-    elif command -v zypper &> /dev/null; then
-        zypper install -y curl wget figlet >/dev/null 2>&1
-    elif command -v apk &> /dev/null; then
-        apk add --no-cache curl wget figlet >/dev/null 2>&1
-    fi
-}
-
-# Main installation
+# Main installation routine
 main() {
-    # Check root
-    [[ $EUID -ne 0 ]] && { echo "Run as root"; exit 1; }
+    [[ $EUID -ne 0 ]] && { echo "Please run as root!"; exit 1; }
 
-    # Clean ALL existing MOTDs first
     clean_motds
-
-    # Install dependencies silently
     install_deps
 
-    # Create our MOTD directly
-    create_motd
-
-    # Setup for dynamic MOTD systems (Ubuntu/Debian primarily)
     if [[ -d "/etc/update-motd.d" ]]; then
-        cp "$MOTD_FILE" "/etc/update-motd.d/00-evoluso"
-        chmod +x "/etc/update-motd.d/00-evoluso"
+        create_dynamic_motd_script
+        echo "Evoluso MOTD dynamic script installed in /etc/update-motd.d/00-evoluso"
+    else
+        create_static_motd
+        echo "Evoluso MOTD static content written to /etc/motd"
     fi
 
-    # Set correct permissions
-    chmod 644 "$MOTD_FILE"
-
-    # Force update dynamic MOTD cache if system supports it
+    # Force MOTD update if available
     command -v update-motd >/dev/null 2>&1 && update-motd >/dev/null 2>&1
 
-    # Restart SSH service to apply MOTD changes
+    # Restart SSH (if present) to ensure MOTD is loaded on new sessions
     systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null
 
-    echo "EVOLUSO MOTD installed successfully!"
+    echo "✅ EVOLUSO MOTD installed successfully!"
 }
 
 main "$@"
