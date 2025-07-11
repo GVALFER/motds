@@ -77,12 +77,8 @@ echo " ███████║ ╚████╔╝ ╚██████╔�
 echo " ╚══════╝  ╚═══╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ "
 echo -e "${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${WHITE}                    RELIABLE HOSTING                           ${NC}"
-echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-echo
 echo -e "${GREEN}Hostname:${NC} $HOSTNAME"
 echo -e "${GREEN}IP Address:${NC} $MAIN_IP"
-echo
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 EOF
     chmod +x "$MOTD_SCRIPT"
