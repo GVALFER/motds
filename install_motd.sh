@@ -64,7 +64,7 @@ YELLOW='\033[1;33m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-CPUT=$(cat /proc/cpuinfo | grep -c processor)
+CPU=$(lscpu | awk -F: '/Model name/ {print $2}' | xargs)
 MEM=$(free -h | awk '/^Mem:/{print $2}')
 HOSTNAME=$(hostname)
 MAIN_IP=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}' | grep -v unreachable)
@@ -81,8 +81,8 @@ echo -e "${NC}"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}Hostname:${NC}   $HOSTNAME"
 echo -e "${GREEN}IP Address:${NC} $MAIN_IP"
-echo -e "${GREEN}CPU Cores:${NC}   $CPUT"
-echo -e "${GREEN}Memory:${NC}      $MEM"
+echo -e "${GREEN}CPU:${NC}        $CPU"
+echo -e "${GREEN}Memory:${NC}     $MEM"
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 EOF
     chmod +x "$MOTD_SCRIPT"
