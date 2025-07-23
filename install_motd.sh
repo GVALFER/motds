@@ -24,14 +24,18 @@ clean_motds() {
     if [[ -d "/etc/update-motd.d" ]]; then
         rm -f /etc/update-motd.d/* 2>/dev/null || true
         mkdir -p /etc/update-motd.d
+        sed -i '/PrintMotd/d' /etc/ssh/sshd_config 2>/dev/null
+        echo "PrintMotd no" >> /etc/ssh/sshd_config
+    else
+        sed -i '/PrintMotd/d' /etc/ssh/sshd_config 2>/dev/null
+        echo "PrintMotd yes" >> /etc/ssh/sshd_config
     fi
     [[ -f /etc/default/motd-news ]] && sed -i 's/ENABLED=1/ENABLED=0/' /etc/default/motd-news 2>/dev/null
     systemctl disable motd-news.service motd-news.timer 2>/dev/null || true
     systemctl stop motd-news.service motd-news.timer 2>/dev/null || true
     rm -f /etc/apt/apt.conf.d/99update-notifier 2>/dev/null || true
-    sed -i '/PrintMotd/d' /etc/ssh/sshd_config 2>/dev/null || true
-    echo "PrintMotd yes" >> /etc/ssh/sshd_config
 }
+
 
 # Install required dependencies (curl, wget, etc)
 install_deps() {
